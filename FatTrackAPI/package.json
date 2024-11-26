@@ -1,0 +1,21 @@
+{
+  "name": "userdata",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google-cloud/firestore": "^7.10.0",
+    "@hapi/hapi": "^21.3.12",
+    "firebase-admin": "^13.0.1",
+    "hapi": "^18.1.0",
+    "moment": "^2.30.1",
+    "nodemon": "^3.1.7"
+  }
+}
