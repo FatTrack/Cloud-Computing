@@ -13,8 +13,11 @@
   "dependencies": {
     "@google-cloud/firestore": "^7.10.0",
     "@hapi/hapi": "^21.3.12",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
     "firebase-admin": "^13.0.1",
     "hapi": "^18.1.0",
+    "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",
     "nodemon": "^3.1.7"
   }

@@ -1,4 +1,4 @@
-const { getDailyCalories } = require('./HandlerCalories');
+const HandlerArticle = require("./HandlerArticle");
 const { verifyToken } = require('../utils/jwt');
 
 // Middleware untuk validasi token JWT
@@ -34,15 +34,23 @@ const validateToken = (request, h) => {
   }
 };
 
-const routes = [
+const RoutesArticle = [
   {
-    method: 'GET',
-    path: '/home/histories/{userId}',
+    method: "GET",
+    path: "/articles",
     options: {
-      pre: [{ method: validateToken }], // Middleware validasi token
-    },
-    handler: getDailyCalories,
+        pre: [{ method: validateToken }], // Middleware validasi token
+      },
+    handler: HandlerArticle.getAllArticles,
+  },
+  {
+    method: "GET",
+    path: "/articles/{id}",
+    options: {
+        pre: [{ method: validateToken }], // Middleware validasi token
+      },
+    handler: HandlerArticle.getArticleById,
   },
 ];
 
-module.exports = routes;
+module.exports = RoutesArticle;

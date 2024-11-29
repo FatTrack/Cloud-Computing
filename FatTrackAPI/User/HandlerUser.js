@@ -2,6 +2,8 @@
 const { Firestore } = require('@google-cloud/firestore');
 const admin = require('firebase-admin');
 const path = require('path');
+const bcrypt = require('bcrypt');
+const { createToken } = require('../utils/jwt');
 
 const keyFilePath = path.resolve(__dirname, '../firebase-service-account.json');
 
@@ -25,22 +27,34 @@ const addUser = async (payload) => {
     };
   }
 
-  const docRef = firestore.collection('user').doc();
-  await docRef.set({
-    email,
-    nama,
-    password,
-    createdAt: Firestore.Timestamp.now(),
-  });
+  try {
+    // Hash password sebelum disimpan
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  return {
-    code: 201,
-    status: 'Created',
-    data: {
-      message: 'Registerasi berhasil', 
-      id: docRef.id 
-    },
-  };
+    const docRef = firestore.collection('user').doc();
+    await docRef.set({
+      email,
+      nama,
+      password: hashedPassword, // Simpan password yang sudah di-hash
+      createdAt: Firestore.Timestamp.now(),
+    });
+
+    return {
+      code: 201,
+      status: 'Created',
+      data: {
+        message: 'Registrasi berhasil',
+        id: docRef.id,
+      },
+    };
+  } catch (error) {
+    console.error('Error registering user:', error);
+    return {
+      code: 500,
+      status: 'Internal Server Error',
+      data: { message: 'Terjadi kesalahan saat registrasi' },
+    };
+  }
 };
 
 // Update foto profil user
@@ -173,7 +187,7 @@ const loginHandler = async (request, h) => {
     return h.response({
       code: 400,
       status: 'Bad Request',
-      data: { message: 'Email and password are required' }
+      data: { message: 'Email dan password wajib diisi' },
     }).code(400);
   }
 
@@ -183,38 +197,43 @@ const loginHandler = async (request, h) => {
     if (userQuery.empty) {
       return h.response({
         code: 401,
-        status: 'Unauthorized', 
-        data: { message: 'Invalid email or password' } 
+        status: 'Unauthorized',
+        data: { message: 'Email atau password salah' },
       }).code(401);
     }
 
     const userDoc = userQuery.docs[0];
     const userData = userDoc.data();
 
-    if (userData.password !== password) {
+    // Cocokkan password menggunakan bcrypt
+    const isPasswordValid = await bcrypt.compare(password, userData.password);
+
+    if (!isPasswordValid) {
       return h.response({
         code: 401,
-        status: 'Unauthorized', 
-        data: { message: 'Invalid email or password' } 
+        status: 'Unauthorized',
+        data: { message: 'Email atau password salah' },
       }).code(401);
     }
 
-    return h.response({
-      code: 200,
-      status: 'Success',
-      data: {
-        message: 'Login successful',
-        user: {
-          id: userDoc.id,
-          name: userData.name,
-          email: userData.email,
-        }
-      },
-    }).code(200);
-  } catch (err) {
-    console.error('Error logging in:', err);
+    // Buat JWT setelah login berhasil
+    const token = createToken({ id: userDoc.id, email: userData.email });
+
+    return h
+      .response({
+        code: 200,
+        status: 'Success',
+        data: {
+          message: 'Login berhasil',
+          token,
+        },
+      })
+      .code(200);
+  } catch (error) {
+    console.error('Error logging in:', error);
     return h.response({ message: 'Internal Server Error' }).code(500);
   }
 };
+
 
 module.exports = { addUser, updateProfilePhoto, getAllUsers, getUserById, loginHandler };

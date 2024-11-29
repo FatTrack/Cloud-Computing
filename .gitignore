@@ -1,6 +1,7 @@
 FatTrackAPI/node_modules
 FatTrackAPI/package-lock.json
 FatTrackAPI/firebase-service-account.json
+FatTrackAPI/.env
 
 ml-api/main2.py
 ml-api/firebase-service-account.json

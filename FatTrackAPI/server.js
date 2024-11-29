@@ -2,6 +2,8 @@ const Hapi = require('@hapi/hapi');
 const fs = require('fs');
 const admin = require('firebase-admin');
 const path = require('path');
+require('dotenv').config();
+
 
 const serviceAccountKey = require('./firebase-service-account.json');
 
@@ -19,7 +21,7 @@ const init = async () => {
   });
 
   // Memuat semua rute dari folder yang relevan
-  const routesFolders = ['./User', './SearchFood', './CalorieHistories'];
+  const routesFolders = ['./User', './SearchFood', './CalorieHistories', './Histories', './Article'];
 
   routesFolders.forEach((folder) => {
     const files = fs.readdirSync(path.resolve(__dirname, folder));

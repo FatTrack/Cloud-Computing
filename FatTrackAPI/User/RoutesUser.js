@@ -1,4 +1,38 @@
 const handler = require('./HandlerUser');
+const { verifyToken } = require('../utils/jwt');
+
+// Middleware untuk validasi token JWT
+const validateToken = (request, h) => {
+  const authHeader = request.headers.authorization;
+
+  if (!authHeader) {
+    return h
+      .response({
+        code: 401,
+        status: 'Unauthorized',
+        data: { message: 'Token tidak disediakan' },
+      })
+      .takeover()
+      .code(401);
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = verifyToken(token);
+    request.auth = decoded; // Simpan payload JWT di `request.auth`
+    return h.continue;
+  } catch (err) {
+    return h
+      .response({
+        code: 401,
+        status: 'Unauthorized',
+        data: { message: 'Token tidak valid' },
+      })
+      .takeover()
+      .code(401);
+  }
+};
 
 const routes = [
   // Tambah user
@@ -27,29 +61,13 @@ const routes = [
     handler: handler.loginHandler,
   },
 
-  // Ambil semua user
-  {
-    method: 'GET',
-    path: '/users',
-    handler: async (request, h) => {
-      try {
-        const response = await handler.getAllUsers();
-        return h.response(response).code(response.code);
-      } catch (err) {
-        console.error('Error:', err);
-        return h.response({
-          code: 500,
-          status: 'Internal Server Error',
-          data: { message: 'Terjadi kesalahan pada server' },
-        }).code(500);
-      }
-    },
-  },
-
   // Ambil user berdasarkan ID
   {
     method: 'GET',
     path: '/users/{userId}',
+    options: {
+      pre: [{ method: validateToken }], // Middleware validasi token
+    },
     handler: async (request, h) => {
       try {
         const { userId } = request.params;
@@ -71,6 +89,7 @@ const routes = [
     method: 'POST',
     path: '/photo',
     options: {
+      pre: [{ method: validateToken }],
       payload: {
         output: 'stream',
         parse: true,
