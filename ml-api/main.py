@@ -4,19 +4,18 @@ import traceback
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-from google.cloud import firestore, storage
+from google.cloud import firestore
 from fastapi import FastAPI, Response, UploadFile, Form, Header, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
 import pytz  # Untuk menangani zona waktu
 import firebase_admin
-from firebase_admin import credentials, storage as firebase_storage
+from firebase_admin import credentials, storage
 import jwt  # Untuk validasi JWT
 import uuid  # Untuk membuat nama file unik
-import tempfile
 
 # Secret key untuk JWT (harus sesuai dengan yang di backend Node.js)
-SECRET_KEY = ""  # Ganti dengan kunci rahasia Anda
+SECRET_KEY = "3f5b2e8c1d9f4a6b7e2c5d8f1a3b6e9c2d7f4b1e5a8c3d6f9b2e7"  # Ganti dengan kunci rahasia Anda
 
 # Security schema untuk Bearer Token
 security = HTTPBearer()
@@ -37,29 +36,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     token = credentials.credentials  # Ambil token dari Authorization header
     return verify_jwt(token)
 
-# Fungsi untuk mendownload model dari Google Cloud Storage
-def download_model_from_gcs(bucket_name, source_blob_name):
-    try:
-        # Inisialisasi client Google Cloud Storage  
-        client = storage.Client()
-        bucket = client.get_bucket(bucket_name)
-        blob = bucket.blob(source_blob_name)
-
-        # Unduh model ke file sementara
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".h5")
-        blob.download_to_filename(temp_file.name)
-        print(f"Model downloaded to {temp_file.name}")
-        return temp_file.name
-    except Exception as e:
-        raise ValueError(f"Error downloading model from GCS: {e}")
-
-# Unduh dan muat model dari GCS
-bucket_name = "capstone-project-c242-model"  # Ganti dengan nama bucket Anda
-model_path_in_gcs = "Model_final2.h5"  # Ganti dengan path file model di bucket
-model_file = download_model_from_gcs(bucket_name, model_path_in_gcs)
-
-# Load model menggunakan TensorFlow
-model = tf.keras.models.load_model(model_file)
+# Load model menggunakan TensorFlow dari direktori lokal
+model = tf.keras.models.load_model('./Model_final2.h5')
 print("Model loaded successfully")
 
 # Initialize Firebase Admin SDK
@@ -106,7 +84,7 @@ def upload_image_to_firebase(image_file, user_id):
         image_file.file.seek(0)
 
         # Tentukan bucket Firebase dan path file
-        bucket = firebase_storage.bucket()
+        bucket = storage.bucket()
         filename = f"prediction/{user_id}_{str(uuid.uuid4())}_{image_file.filename}"
         blob = bucket.blob(filename)
 
