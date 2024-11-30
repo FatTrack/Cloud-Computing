@@ -4,7 +4,6 @@ const admin = require('firebase-admin');
 const path = require('path');
 require('dotenv').config();
 
-
 const serviceAccountKey = require('./firebase-service-account.json');
 
 const init = async () => {
@@ -17,7 +16,7 @@ const init = async () => {
 
   const server = Hapi.server({
     port: 3000,
-    host: 'localhost',
+    host: '0.0.0.0',  // Ubah dari 'localhost' menjadi '0.0.0.0'
   });
 
   // Memuat semua rute dari folder yang relevan

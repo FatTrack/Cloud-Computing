@@ -1,24 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10.3-slim-buster
+# Gunakan image dasar Python
+FROM python:3.9-slim
 
-# Set the working directory in the container
-WORKDIR /workspace
+# Set working directory
+WORKDIR /app
 
-# Copy the requirements file into the container
-COPY requirements.txt requirements.txt
+# Salin file requirements.txt untuk mengelola dependencies
+COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code into the container
+# Salin semua file aplikasi ke dalam container
 COPY . .
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV HOST 0.0.0.0
+# Expose port yang digunakan oleh aplikasi
+EXPOSE 8000
 
-# Expose the port FastAPI will run on
-EXPOSE 8080
-
-# Command to run the application
-CMD ["python", "main.py"]
+# Perintah untuk menjalankan aplikasi
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

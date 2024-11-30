@@ -1,8 +1,7 @@
-// HandlerUser.js
 const { Firestore } = require('@google-cloud/firestore');
 const admin = require('firebase-admin');
 const path = require('path');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // Ganti bcrypt dengan bcryptjs
 const { createToken } = require('../utils/jwt');
 
 const keyFilePath = path.resolve(__dirname, '../firebase-service-account.json');
@@ -117,7 +116,6 @@ const updateProfilePhoto = async (userId, fileBuffer, fileName) => {
   };
 };
 
-
 // Ambil semua user
 const getAllUsers = async () => {
   const snapshot = await firestore.collection('user').get();
@@ -148,7 +146,6 @@ const getAllUsers = async () => {
     data: users,
   };
 };
-
 
 // Ambil user berdasarkan ID
 const getUserById = async (userId) => {
@@ -205,7 +202,7 @@ const loginHandler = async (request, h) => {
     const userDoc = userQuery.docs[0];
     const userData = userDoc.data();
 
-    // Cocokkan password menggunakan bcrypt
+    // Cocokkan password menggunakan bcryptjs
     const isPasswordValid = await bcrypt.compare(password, userData.password);
 
     if (!isPasswordValid) {
@@ -234,6 +231,5 @@ const loginHandler = async (request, h) => {
     return h.response({ message: 'Internal Server Error' }).code(500);
   }
 };
-
 
 module.exports = { addUser, updateProfilePhoto, getAllUsers, getUserById, loginHandler };

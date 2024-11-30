@@ -3,7 +3,7 @@ const secretKey = process.env.JWT_SECRET_KEY; // Simpan secara aman
 
 // Membuat token JWT
 const createToken = (payload) => {
-  return jwt.sign(payload, secretKey, { expiresIn: '30d' });
+  return jwt.sign(payload, secretKey, { expiresIn: '30d' }); // Token berlaku 30 hari
 };
 
 // Memverifikasi token JWT

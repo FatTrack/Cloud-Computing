@@ -5,17 +5,17 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 from google.cloud import firestore
-from fastapi import FastAPI, Response, UploadFile, Form, Header, HTTPException, Depends
+from fastapi import FastAPI, Response, UploadFile, Form, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
-import pytz  # Untuk menangani zona waktu
+import pytz
 import firebase_admin
 from firebase_admin import credentials, storage
-import jwt  # Untuk validasi JWT
-import uuid  # Untuk membuat nama file unik
+import jwt
+import uuid
 
-# Secret key untuk JWT (harus sesuai dengan yang di backend Node.js)
-SECRET_KEY = "3f5b2e8c1d9f4a6b7e2c5d8f1a3b6e9c2d7f4b1e5a8c3d6f9b2e7"  # Ganti dengan kunci rahasia Anda
+# Secret key untuk JWT
+SECRET_KEY = "3f5b2e8c1d9f4a6b7e2c5d8f1a3b6e9c2d7f4b1e5a8c3d6f9b2e7"
 
 # Security schema untuk Bearer Token
 security = HTTPBearer()
@@ -23,7 +23,6 @@ security = HTTPBearer()
 # Fungsi untuk memverifikasi token JWT
 def verify_jwt(token: str):
     try:
-        # Decode token
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
@@ -33,17 +32,21 @@ def verify_jwt(token: str):
 
 # Dependency untuk mendapatkan user dari token
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials  # Ambil token dari Authorization header
+    token = credentials.credentials
     return verify_jwt(token)
 
-# Load model menggunakan TensorFlow dari direktori lokal
-model = tf.keras.models.load_model('./Model_final2.h5')
-print("Model loaded successfully")
+# Load model lokal
+model_path = './Model_final2.h5'  # Ganti dengan path lokal model Anda
+try:
+    model = tf.keras.models.load_model(model_path)
+    print("Model loaded successfully from local file.")
+except Exception as e:
+    raise RuntimeError(f"Failed to load model: {e}")
 
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate('./firebase-service-account.json')
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'capstone-project-c242-ps030.firebasestorage.app'  # Ganti dengan bucket Firebase Anda
+    'storageBucket': 'capstone-project-c242-ps030.firebasestorage.app'
 })
 
 # Initialize FastAPI
@@ -70,28 +73,21 @@ def get_food_data_from_firestore(food_name):
 # Fungsi preprocessing gambar
 def preprocess_image(image, target_size=(224, 224)):
     try:
-        img = Image.open(image).convert("RGB")  # Ubah gambar menjadi format RGB
-        img = img.resize(target_size)  # Ubah ukuran gambar
-        img_array = np.array(img) / 255.0  # Normalisasi nilai piksel ke [0, 1]
-        return np.expand_dims(img_array, axis=0)  # Menambahkan dimensi batch
+        img = Image.open(image).convert("RGB")
+        img = img.resize(target_size)
+        img_array = np.array(img) / 255.0
+        return np.expand_dims(img_array, axis=0)
     except Exception as e:
         raise ValueError(f"Error during image preprocessing: {e}")
 
 # Fungsi untuk menyimpan gambar ke Firebase Storage dan mendapatkan URL publik
 def upload_image_to_firebase(image_file, user_id):
     try:
-        # Reset stream file ke posisi awal
         image_file.file.seek(0)
-
-        # Tentukan bucket Firebase dan path file
         bucket = storage.bucket()
-        filename = f"prediction/{user_id}_{str(uuid.uuid4())}_{image_file.filename}"
+        filename = f"prediction/{user_id}_{uuid.uuid4()}_{image_file.filename}"
         blob = bucket.blob(filename)
-
-        # Upload file ke Firebase Storage
         blob.upload_from_file(image_file.file, content_type=image_file.content_type)
-
-        # Membuat URL publik
         blob.make_public()
         return blob.public_url
     except Exception as e:
@@ -101,126 +97,65 @@ def upload_image_to_firebase(image_file, user_id):
 def store_prediction_to_user(user_id, prediction_data):
     try:
         user_ref = db.collection('user').document(user_id)
-
-        # Periksa apakah dokumen user ada
         user_doc = user_ref.get()
         if not user_doc.exists:
             raise ValueError(f"User dengan ID {user_id} tidak ditemukan")
-
-        # Simpan data ke subkoleksi 'predictions'
         prediction_ref = user_ref.collection('predictions').add(prediction_data)
         print(f"Prediction berhasil disimpan dengan ID: {prediction_ref[1].id}")
-    except ValueError as ve:
-        print(f"User tidak ditemukan: {ve}")
-        raise
     except Exception as e:
-        print(f"Error storing prediction to user document: {e}")
-        raise
+        raise ValueError(f"Error storing prediction: {e}")
 
-# Endpoint untuk prediksi gambar dengan menyimpan ke dokumen user
+# Endpoint untuk prediksi gambar
 @app.post("/predict_image")
 async def predict_image(
-    user: dict = Depends(get_current_user),  # Ambil data user dari token
-    user_id: str = Form(...), 
-    uploaded_file: UploadFile = None, 
+    user: dict = Depends(get_current_user),
+    user_id: str = Form(...),
+    uploaded_file: UploadFile = None,
     response: Response = None
 ):
-    # Gunakan 'id' dari token, bukan 'user_id'
     if user.get("id") != user_id:
         response.status_code = 401
-        return {
-            "code": 401,
-            "status": "error",
-            "data": {"message": "User ID tidak sesuai dengan token"}
-        }
+        return {"code": 401, "status": "error", "data": {"message": "User ID tidak sesuai dengan token"}}
 
-    # Memeriksa tipe file gambar
     if uploaded_file.content_type not in ["image/jpeg", "image/png", "image/jpg", "image/bmp"]:
         response.status_code = 400
-        return {
-            "code": 400,
-            "status": "error",
-            "data": {"message": "File is not a valid image (JPEG, JPG, PNG required)"}
-        }
+        return {"code": 400, "status": "error", "data": {"message": "Invalid image format"}}
 
     try:
-        # Mengonversi file gambar menjadi numpy array
         image_data = preprocess_image(uploaded_file.file)
-        print("Image shape:", image_data.shape)
-
-        # Melakukan prediksi menggunakan model
         prediction = model.predict(image_data)
-        
-        # Melakukan prediksi kelas
-        class_labels = ["bakso", "bubur_ayam", "lontong_balap", "martabak_telur", 
-                        "nasi_goreng", "pempek", "rawon", "rendang", "rujak_cingur", 
-                        "telur_balado", "telur_dadar"]  # Label makanan
-        predicted_class = class_labels[np.argmax(prediction)]  # Menentukan kelas dengan probabilitas tertinggi
-        confidence = float(np.max(prediction))  # Mengambil nilai probabilitas tertinggi
+        class_labels = ["bakso", "bubur_ayam", "lontong_balap", "martabak_telur",
+                        "nasi_goreng", "pempek", "rawon", "rendang", "rujak_cingur",
+                        "telur_balado", "telur_dadar"]
+        predicted_class = class_labels[np.argmax(prediction)]
+        confidence = float(np.max(prediction))
 
-        # Validasi confidence
         if confidence < 0.90:
             response.status_code = 400
-            return {
-                "code": 400,
-                "status": "error",
-                "data": {"message": "Tingkat kepercayaan terhadap gambar tidak cukup, mohon kirim gambar lain"}
-            }
+            return {"code": 400, "status": "error", "data": {"message": "Low confidence, try another image"}}
 
-        # Mendapatkan informasi nutrisi dari Firestore
         food_info = get_food_data_from_firestore(predicted_class)
         if not food_info:
             response.status_code = 400
-            return {
-                "code": 400,
-                "status": "error",
-                "data": {"message": "Data nutrisi untuk makanan ini tidak tersedia"}
-            }
+            return {"code": 400, "status": "error", "data": {"message": "Food data not found"}}
 
-        # Upload gambar ke Firebase Storage
         image_url = upload_image_to_firebase(uploaded_file, user_id)
-
-        # Data yang akan disimpan
         prediction_data = {
             "predicted_class": predicted_class,
             "confidence": confidence,
             "nutritional_info": food_info,
-            "image_url": image_url,  # Tambahkan URL gambar
-            "createdAt": datetime.now(pytz.timezone("Asia/Jakarta"))  # Timestamp sebagai datetime
+            "image_url": image_url,
+            "createdAt": datetime.now(timezone)
         }
 
-        # Menyimpan hasil prediksi ke Firestore (dokumen user)
-        try:
-            store_prediction_to_user(user_id, prediction_data)
-        except ValueError as ve:
-            response.status_code = 404
-            return {
-                "code": 404,
-                "status": "error",
-                "data": {"message": str(ve)}
-            }
-        except Exception as e:
-            response.status_code = 500
-            return {
-                "code": 500,
-                "status": "error",
-                "data": {"message": "Terjadi kesalahan saat menyimpan data prediksi"}
-            }
+        store_prediction_to_user(user_id, prediction_data)
 
-        return {
-            "code": 200,
-            "status": "success",
-            "data": prediction_data
-        }
-
+        return {"code": 200, "status": "success", "data": prediction_data}
     except Exception as e:
-        print(f"Error during prediction process: {e}")
+        traceback.print_exc()
         response.status_code = 500
-        return {
-            "code": 500,
-            "status": "error",
-            "data": {"message": "Terjadi kesalahan saat memproses gambar"}
-        }
+        return {"code": 500, "status": "error", "data": {"message": "Internal Server Error"}}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))  # Default ke 8000
+    uvicorn.run(app, host="0.0.0.0", port=port)
