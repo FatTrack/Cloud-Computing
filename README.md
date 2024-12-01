@@ -8,17 +8,17 @@ Api ini ini membantu pengguna mendeteksi jumlah kalori pada makanan berdasarkan 
 ## Instalasi
 1. Clone repository:
    ```bash
-   git clone https://github.com/username/nama-proyek.git
+   git clone https://github.com/FatTrack/Cloud-Computing.git
    ```
 2. Masuk ke direktori proyek:
    ```bash
-   cd nama-proyek
+   cd FatTrackAPI atau ml-api
    ```
 3. Install dependencies:
    ```bash
-   npm install
+   npm install / pip install requirements.txt
    ```
 4. Jalankan aplikasi:
    ```bash
-   npm run start
+   npm run start / python main.py
    ```
