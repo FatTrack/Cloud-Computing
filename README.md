@@ -22,3 +22,14 @@ Api ini ini membantu pengguna mendeteksi jumlah kalori pada makanan berdasarkan 
    ```bash
    npm run start / python main.py
    ```
+
+## Penggunaan
+1. Buka Postman.
+2. Testing endpoint
+3. Unggah gambar makanan.
+4. Lihat hasil prediksi kalori dan gizi.
+
+## Lisensi
+Proyek ini dilisensikan di bawah MIT License. Lihat [LICENSE](./LICENSE) untuk informasi lebih lanjut.
+
+
