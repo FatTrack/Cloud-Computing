@@ -4,19 +4,20 @@ const admin = require('firebase-admin');
 const path = require('path');
 require('dotenv').config();
 
-const serviceAccountKey = require('./firebase-service-account.json');
+// Service Account key
+const serviceAccountKey = require('');
 
 const init = async () => {
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccountKey),
-      storageBucket: 'capstone-project-c242-ps030.firebasestorage.app',
+      storageBucket: '', // Storage Bucket
     });
   }
 
   const server = Hapi.server({
     port: 3000,
-    host: '0.0.0.0',  // Ubah dari 'localhost' menjadi '0.0.0.0'
+    host: '0.0.0.0',
   });
 
   // Memuat semua rute dari folder yang relevan
