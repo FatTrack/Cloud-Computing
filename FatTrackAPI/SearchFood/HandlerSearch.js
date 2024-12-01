@@ -1,11 +1,12 @@
 const { Firestore } = require('@google-cloud/firestore');
 const path = require('path');
 
-const keyFilePath = path.resolve(__dirname, '../firebase-service-account.json');
+// Service Account Key
+const keyFilePath = path.resolve(__dirname, '');
 
 // Inisialisasi Firestore
 const firestore = new Firestore({
-  projectId: 'capstone-project-c242-ps030',
+  projectId: '', // Project ID Google Cloud
   keyFilename: keyFilePath,
 });
 
