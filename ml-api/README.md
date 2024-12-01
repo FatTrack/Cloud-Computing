@@ -16,7 +16,7 @@ To get started, follow these steps:
 
 1. Clone the repository:
 ```sh
-git clone https://github.com/your-username/your-repository.git
+git clone https://github.com/FatTrack/Cloud-Computing.git
 ```
 
 2. Install the required libraries:
@@ -28,11 +28,9 @@ pip install -r requirements.txt
 - If you have an `.h5` model file, place it in the same folder as `main.py`.
 - If you have a saved model format, place it in a folder named `my_model_folder` in the same directory as `main.py`.
 
-4. Complete the `predict_text` or `predict_image` function
+4. Complete `predict_image` function
 
 4. Run the server:
 ```sh
 python main.py
 ```
->>>>>>> 5224723 (Initialize)
->>>>>>> 35a3777 (Pesan commit pertama)
