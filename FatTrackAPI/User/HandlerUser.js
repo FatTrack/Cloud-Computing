@@ -1,14 +1,15 @@
 const { Firestore } = require('@google-cloud/firestore');
 const admin = require('firebase-admin');
 const path = require('path');
-const bcrypt = require('bcryptjs'); // Ganti bcrypt dengan bcryptjs
+const bcrypt = require('bcryptjs');
 const { createToken } = require('../utils/jwt');
 
-const keyFilePath = path.resolve(__dirname, '../firebase-service-account.json');
+// Service Account Key
+const keyFilePath = path.resolve(__dirname, '');
 
 // Inisialisasi Firestore
 const firestore = new Firestore({
-  projectId: 'capstone-project-c242-ps030',
+  projectId: '', // Project ID Google Cloud
   keyFilename: keyFilePath,
 });
 
