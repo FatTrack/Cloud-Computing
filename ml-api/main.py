@@ -44,16 +44,16 @@ except Exception as e:
     raise RuntimeError(f"Failed to load model: {e}")
 
 # Initialize Firebase Admin SDK
-cred = credentials.Certificate('./firebase-service-account.json')
+cred = credentials.Certificate('') # Service Account Key
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'capstone-project-c242-ps030.firebasestorage.app'
+    'storageBucket': '' # Stoage Bucket
 })
 
 # Initialize FastAPI
 app = FastAPI()
 
 # Inisialisasi Firestore Client
-db = firestore.Client.from_service_account_json('./firebase-service-account.json')
+db = firestore.Client.from_service_account_json('') # Firebase Accountt key
 
 # Zona waktu yang diinginkan
 timezone = pytz.timezone("Asia/Jakarta")
