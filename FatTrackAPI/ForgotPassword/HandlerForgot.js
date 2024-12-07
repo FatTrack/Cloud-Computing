@@ -10,8 +10,8 @@ if (!admin.apps.length) {
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'highstuff77@gmail.com',
-    pass: 'qsdk popk qcps guhr',
+    user: '', // Gmail Account
+    pass: '', // Password Account
   },
 });
 
@@ -28,7 +28,7 @@ const forgotPasswordHandler = async (request, h) => {
 
     // Send email using nodemailer
     await transporter.sendMail({
-      from: 'highstuff77@gmail.com',
+      from: '', // Gmail Account
       to: email,
       subject: 'Reset your password for Fat Track',
       text: `Hi there,
