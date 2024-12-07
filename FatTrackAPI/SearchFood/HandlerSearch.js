@@ -32,7 +32,7 @@ const searchFoodHandler = async (request, h) => {
     try {
         // Query Firestore untuk mencari makanan berdasarkan nama
         const makananRef = firestore.collection('makanan');
-        const snapshot = await makananRef.where('nama', '==', nama).get();
+        const snapshot = await makananRef.where('nama', '>=', nama).where('nama', '<=', nama + '\uf8ff').get();
 
         if (snapshot.empty) {
             return h.response({
@@ -42,18 +42,17 @@ const searchFoodHandler = async (request, h) => {
             }).code(404);
         }
 
-        const result = [];
-        snapshot.forEach((doc) => {
-            result.push({
-                code: 200,
-                status: 'Success',
-                data: {
-                    id: doc.id, ...doc.data()
-                },
-            });
-        });
+        const result = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+        
 
-        return h.response(result).code(200);
+        return h.response({
+            code: 200,
+            status: 'Success',
+            data: result
+        }).code(200);
     } catch (error) {
         console.error('Error fetching data:', error);
         return h.response({ error: 'Terjadi kesalahan pada server.' }).code(500);

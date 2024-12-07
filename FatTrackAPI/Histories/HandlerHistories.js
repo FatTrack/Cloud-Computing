@@ -1,80 +1,73 @@
-const moment = require("moment");
+const moment = require("moment-timezone");
 const admin = require("firebase-admin");
 
 const db = admin.firestore();
 
 const getAllHistoryin3Days = async (request, h) => {
-    try {
-        const { userId } = request.params; // Mengambil id user dari parameter URL
-        const threeDaysAgo = moment().subtract(2, "days").startOf("day");
-        const today = moment().endOf("day");
+  try {
+      const { userId } = request.params; // Mengambil id user dari parameter URL
+      const threeDaysAgo = moment().subtract(2, "days").startOf("day");
+      const today = moment().endOf("day");
 
-        // Periksa apakah user dengan ID yang diberikan ada
-        const userDoc = await db.collection("user").doc(userId).get();
-        if (!userDoc.exists) {
-            return h.response({
-                code: 404,
-                status: "Not Found",
-                data: {
-                    message: "User not found",
-                },
-            }).code(404);
-        }
+      const userDoc = await db.collection("user").doc(userId).get();
+      if (!userDoc.exists) {
+          return h.response({
+              code: 404,
+              status: "Not Found",
+              data: {
+                  message: "User not found",
+              },
+          }).code(404);
+      }
 
-        // Ambil subcollection predictions
-        const predictionsSnapshot = await db
-            .collection("user")
-            .doc(userId)
-            .collection("predictions")
-            .where("createdAt", ">=", threeDaysAgo.toDate())
-            .where("createdAt", "<=", today.toDate())
-            .get();
+      // Ambil subcollection predictions
+      const predictionsSnapshot = await db
+          .collection("user")
+          .doc(userId)
+          .collection("predictions")
+          .where("createdAt", ">=", threeDaysAgo.toDate())
+          .where("createdAt", "<=", today.toDate())
+          .get();
 
-        if (predictionsSnapshot.empty) {
-            return h.response({
-                code: 404,
-                status: "Not Found",
-                data: {
-                    message: "No predictions found",
-                },
-            }).code(404);
-        }
+      if (predictionsSnapshot.empty) {
+          return h.response({
+              code: 404,
+              status: "Not Found",
+              data: {
+                  message: "No predictions found",
+              },
+          }).code(404);
+      }
 
-        // Proses data
-        const predictions = predictionsSnapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-                food_name: data.nutritional_info?.nama || "Unknown",
-                prediction_date: moment(data.createdAt.toDate()).format("YYYY-MM-DD"),
-                calories: data.nutritional_info?.kalori || 0,
-                image_url: data.image_url,
-            };
-        });
+      // Proses data
+      const predictions = predictionsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+              food_name: data.nutritional_info?.nama || "Unknown",
+              prediction_date: moment(data.createdAt.toDate())
+                    .tz("Asia/Jakarta")
+                    .format("YYYY-MM-DD HH:mm:ss"),
+              calories: data.nutritional_info?.kalori || 0,
+              image_url: data.image_url,
+          };
+      });
 
-        // Kelompokkan berdasarkan tanggal
-        const groupedByDate = predictions.reduce((acc, item) => {
-            const date = item.prediction_date;
-            if (!acc[date]) {
-                acc[date] = [];
-            }
-            acc[date].push(item);
-            return acc;
-        }, {});
+      // Mengembalikan semua data prediksi
+      const response = {
+          code: 200,
+          status: "Success",
+          data: predictions, // Tidak dikelompokkan
+      };
 
-        const response = {
-            code: 200,
-            status: "Success",
-            data: groupedByDate,
-        };
-
-        return h.response(response).code(200);
-    } catch (error) {
-        console.error("Error fetching predictions:", error);
-        return h
-            .response({ message: "Internal Server Error", error: error.message })
-            .code(500);
-    }
+      return h.response(response).code(200);
+  } catch (error) {
+      console.error("Error fetching predictions:", error);
+      return h
+          .response({ message: "Internal Server Error", error: error.message })
+          .code(500);
+  }
 };
+
 
 
 const getHistoryin7Days = async (request, h) => {

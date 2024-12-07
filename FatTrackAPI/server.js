@@ -20,7 +20,8 @@ const init = async () => {
   });
 
   // Memuat semua rute dari folder yang relevan
-  const routesFolders = ['./User', './SearchFood', './CalorieHistories', './Histories', './Article'];
+  const routesFolders = ['./User', './SearchFood', './CalorieHistories',
+                        './Histories', './Article', './ForgotPassword'];
 
   routesFolders.forEach((folder) => {
     const files = fs.readdirSync(path.resolve(__dirname, folder));

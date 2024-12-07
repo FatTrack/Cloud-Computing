@@ -36,7 +36,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return verify_jwt(token)
 
 # Load model lokal
-model_path = './Model_final2.h5'  # Ganti dengan path lokal model Anda
+model_path = './ModelFM2.keras'  # Ganti dengan path lokal model Anda
 try:
     model = tf.keras.models.load_model(model_path)
     print("Model loaded successfully from local file.")
@@ -85,7 +85,9 @@ def upload_image_to_firebase(image_file, user_id):
     try:
         image_file.file.seek(0)
         bucket = storage.bucket()
-        filename = f"prediction/{user_id}_{uuid.uuid4()}_{image_file.filename}"
+        content_type = image_file.content_type
+        extension = content_type.split("/")[-1]  # Mengambil 'jpeg', 'png', dll.
+        filename = f"prediction/{user_id}/{uuid.uuid4()}.{extension}"
         blob = bucket.blob(filename)
         blob.upload_from_file(image_file.file, content_type=image_file.content_type)
         blob.make_public()
@@ -125,12 +127,13 @@ async def predict_image(
         image_data = preprocess_image(uploaded_file.file)
         prediction = model.predict(image_data)
         class_labels = ["bakso", "bubur_ayam", "lontong_balap", "martabak_telur",
-                        "nasi_goreng", "pempek", "rawon", "rendang", "rujak_cingur",
-                        "telur_balado", "telur_dadar"]
+                        "nasi_goreng", "pempek", "rawon", "telur_balado", "edamame",
+                        "french Fries", "hamburger", "hot Dog", "pancakes", "sashimi",
+                        "steak", "sushi", "takoyaki"]
         predicted_class = class_labels[np.argmax(prediction)]
         confidence = float(np.max(prediction))
 
-        if confidence < 0.90:
+        if confidence < 0.70:
             response.status_code = 400
             return {"code": 400, "status": "error", "data": {"message": "Low confidence, try another image"}}
 
@@ -157,5 +160,5 @@ async def predict_image(
         return {"code": 500, "status": "error", "data": {"message": "Internal Server Error"}}
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))  # Default ke 8000
+    port = int(os.environ.get("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)

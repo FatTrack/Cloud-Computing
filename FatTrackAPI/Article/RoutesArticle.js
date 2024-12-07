@@ -51,6 +51,14 @@ const RoutesArticle = [
       },
     handler: HandlerArticle.getArticleById,
   },
+  {
+    method: "GET",
+    path: "/articles/search",
+    options: {
+        pre: [{ method: validateToken }], // Middleware validasi token
+    },
+    handler: HandlerArticle.getArticleByName,
+  },
 ];
 
 module.exports = RoutesArticle;

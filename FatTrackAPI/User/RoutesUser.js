@@ -58,7 +58,19 @@ const routes = [
   {
     method: 'POST',
     path: '/login',
-    handler: handler.loginHandler,
+    handler: async (request, h) => {
+      try {
+        const response = await handler.loginHandler(request.payload); // Panggil login handler
+        return h.response(response).code(response.code);
+      } catch (err) {
+        console.error('Error:', err);
+        return h.response({
+          code: 500,
+          status: 'Internal Server Error',
+          data: { message: 'Terjadi kesalahan pada server' },
+        }).code(500);
+      }
+    },
   },
 
   // Ambil user berdasarkan ID
@@ -84,10 +96,10 @@ const routes = [
     },
   },
 
-  // Update foto profil
+  // Update profile
   {
     method: 'POST',
-    path: '/photo',
+    path: '/updateProfile',
     options: {
       pre: [{ method: validateToken }],
       payload: {
@@ -95,34 +107,22 @@ const routes = [
         parse: true,
         allow: 'multipart/form-data',
         multipart: true,
-        maxBytes: 5 * 1024 * 1024, // Batas ukuran file (5MB)
+        maxBytes: 5 * 1024 * 1024,
       },
     },
     handler: async (request, h) => {
       try {
-        // Ambil userId dari body form-data
-        const { userId, file } = request.payload;
+        const { userId, file, newName } = request.payload;
   
-        if (!userId) {
-          return h.response({
-            code: 400,
-            status: 'Bad Request',
-            data: { message: 'userId wajib diisi' },
-          }).code(400);
+        let fileBuffer = null;
+        let fileName = null;
+  
+        if (file && file.hapi) {
+          fileBuffer = file._data;
+          fileName = file.hapi.filename;
         }
   
-        if (!file || !file.hapi) {
-          return h.response({
-            code: 400,
-            status: 'Bad Request',
-            data: { message: 'File tidak ditemukan' },
-          }).code(400);
-        }
-  
-        const fileBuffer = file._data;
-        const fileName = file.hapi.filename;
-  
-        const response = await handler.updateProfilePhoto(userId, fileBuffer, fileName);
+        const response = await handler.updateProfile(userId, fileBuffer, fileName, newName);
         return h.response(response).code(response.code);
       } catch (err) {
         console.error('Error:', err);
