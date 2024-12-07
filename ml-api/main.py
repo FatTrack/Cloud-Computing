@@ -15,7 +15,7 @@ import jwt
 import uuid
 
 # Secret key untuk JWT
-SECRET_KEY = "3f5b2e8c1d9f4a6b7e2c5d8f1a3b6e9c2d7f4b1e5a8c3d6f9b2e7"
+SECRET_KEY = ""
 
 # Security schema untuk Bearer Token
 security = HTTPBearer()
