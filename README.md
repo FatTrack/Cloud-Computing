@@ -56,31 +56,39 @@ Api ini ini membantu pengguna mendeteksi jumlah kalori pada makanan berdasarkan 
    ```bash
    /photo
    ```
+7. Forgot Password
+   ```bash
+   /forgot-password
+   ```
 ##
-7. History Predict User menampilkan total kalori, protein, karbohidrat, lemak dalam 1 hari
+8. History Predict User menampilkan total kalori, protein, karbohidrat, lemak dalam 1 hari
    ```bash
    /home/histories/{userId}
    ```
-8. History Predict User 3 hari (menampilkan seluruh prediksi user)
+9. History Predict User 3 hari (menampilkan seluruh prediksi user)
    ```bash
     /dashboard/check-history/three-days/{userId}
    ```
-9. Menampilkan History total kalori user selama 7 hari
+10. Menampilkan History total kalori user selama 7 hari
     ```bash
        /dashboard/seven-days/{userId}
     ```
-10. Menampilkan data total kalori user selama 30 hari dengan kalkulasi per minggu
+11. Menampilkan data total kalori user selama 30 hari dengan kalkulasi per minggu
     ```bash
      /dashboard/thirty-days/{userId}
     ```
 ##
-11. Artikel
+12. Artikel
     ```bash
     /articles
     ```
-12. Artikel By ID
+13. Artikel By ID
     ```bash
     /articles/{id}
+    ```
+14. Artikel Search by Name
+    ```bash
+    /articles/search
     ```
 
 ## Lisensi
