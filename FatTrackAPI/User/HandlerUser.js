@@ -5,11 +5,10 @@ const { createToken } = require('../utils/jwt');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 
-const keyFilePath = path.resolve(__dirname, '../firebase-service-account.json');
-
+const keyFilePath = path.resolve(__dirname, '');// Service Account Key
 // Inisialisasi Firestore
 const firestore = new Firestore({
-  projectId: 'capstone-project-c242-ps030',
+  projectId: '', // Project ID Google Cloud
   keyFilename: keyFilePath,
 });
 
@@ -234,7 +233,7 @@ const loginHandler = async (payload) => {
   try {
     const userQuery = await firestore.collection('user').where('email', '==', email).get();
     // Firebase Authentication REST API URL untuk login
-    const apiKey = 'AIzaSyB2juMSr7aOCL-kZVjAqzSuJrLN9R8DTpc';
+    const apiKey = ''; // API Web Key (firestore Web API Key)
     const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
 
     // Request body untuk login
