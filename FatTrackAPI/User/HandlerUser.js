@@ -4,6 +4,7 @@ const path = require('path');
 const { createToken } = require('../utils/jwt');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
+const nodemailer = require('nodemailer');
 
 const keyFilePath = path.resolve(__dirname, '');// Service Account Key
 // Inisialisasi Firestore
@@ -13,6 +14,15 @@ const firestore = new Firestore({
 });
 
 const bucket = admin.storage().bucket();
+
+// Konfigurasi Nodemailer
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // Gunakan layanan email yang sesuai
+  auth: {
+    user: '', // Email pengirim
+    pass: '', // Password atau App Password
+  },
+});
 
 // Tambah user baru
 const addUser = async (payload) => {
@@ -48,19 +58,37 @@ const addUser = async (payload) => {
       displayName: nama,
     });
 
+    // Kirim email verifikasi
+    const verificationLink = await admin.auth().generateEmailVerificationLink(email);
+
+    const mailOptions = {
+      from: '',
+      to: email,
+      subject: 'Verify your email for Fat Track',
+      html: `<p>Hello ${nama},</p>
+             <p>Thank you for signing up. Click the link below to verify your email:</p>
+             <a href="${verificationLink}">${verificationLink}</a>
+             <p>If you didn’t ask to verify this address, you can ignore this email.</p>
+             <p>Thanks,</p>
+             <p>Your Fat Track team</p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
     // Simpan data user ke Firestore
     const docRef = firestore.collection('user').doc(authUser.uid);
     await docRef.set({
       email,
       nama,
       createdAt: Firestore.Timestamp.now(),
+      emailVerified: false, // Tambahkan flag email verifikasi
     });
 
     return {
       code: 201,
       status: 'Created',
       data: {
-        message: 'Registrasi berhasil',
+        message: 'Registrasi berhasil. Silakan cek email untuk verifikasi.',
         id: authUser.uid,
       },
     };
@@ -231,24 +259,43 @@ const loginHandler = async (payload) => {
   }
 
   try {
-    const userQuery = await firestore.collection('user').where('email', '==', email).get();
     // Firebase Authentication REST API URL untuk login
-    const apiKey = ''; // API Web Key (firestore Web API Key)
-    const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
+    const apiKey = 'AIzaSyB2juMSr7aOCL-kZVjAqzSuJrLN9R8DTpc';
+    const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
+    const getUserUrl = `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`;
 
     // Request body untuk login
-    const requestBody = {
+    const signInRequestBody = {
       email,
       password,
       returnSecureToken: true,
     };
 
+    // Kirim request login ke Firebase Authentication REST API
+    const signInResponse = await axios.post(signInUrl, signInRequestBody);
+    const idToken = signInResponse.data.idToken;
+
+    // Gunakan idToken untuk mendapatkan informasi user
+    const userInfoResponse = await axios.post(getUserUrl, { idToken });
+    const userInfo = userInfoResponse.data.users[0];
+
+    // Periksa apakah email telah diverifikasi
+    if (!userInfo.emailVerified) {
+      return {
+        code: 403,
+        status: 'Forbidden',
+        data: {
+          message: 'Email Anda belum diverifikasi. Silakan cek email untuk melakukan verifikasi.',
+        },
+      };
+    }
+
+    // Ambil data pengguna dari Firestore (jika diperlukan)
+    const userQuery = await firestore.collection('user').where('email', '==', email).get();
     const userDoc = userQuery.docs[0];
-    const userData = userDoc.data();
+    const userData = userDoc ? userDoc.data() : null;
 
-    // Kirim request ke Firebase Authentication REST API
-    const response = await axios.post(url, requestBody);
-
+    // Buat token JWT untuk sesi
     const token = createToken({ id: userDoc.id, email: userData.email });
 
     return {
@@ -257,11 +304,11 @@ const loginHandler = async (payload) => {
       data: {
         message: 'Login berhasil',
         id: userDoc.id,
-        token
+        token,
       },
     };
   } catch (error) {
-    console.error('Error logging in user:', error);
+    console.error('Error logging in user:', error.response?.data || error.message);
     return {
       code: 401,
       status: 'Unauthorized',
